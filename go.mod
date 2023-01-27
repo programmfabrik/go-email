@@ -1,3 +1,3 @@
-module github.com/programmfabrik/golang-email
+module github.com/programmfabrik/go-email
 
 go 1.19
