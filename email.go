@@ -39,18 +39,19 @@ var ErrMissingContentType = errors.New("No Content-Type found for MIME entity")
 
 // Email is the type used for email messages
 type Email struct {
-	ReplyTo     []string
-	From        string
-	To          []string
-	Bcc         []string
-	Cc          []string
-	Subject     string
-	Text        []byte // Plaintext message (optional)
-	HTML        []byte // Html message (optional)
-	Sender      string // override From as SMTP envelope sender (optional)
-	Headers     textproto.MIMEHeader
-	Attachments []*Attachment
-	ReadReceipt []string
+	ReplyTo       []string
+	From          string
+	To            []string
+	Bcc           []string
+	Cc            []string
+	Subject       string
+	Text          []byte // Plaintext message (optional)
+	HTML          []byte // Html message (optional)
+	Sender        string // override From as SMTP envelope sender (optional)
+	Headers       textproto.MIMEHeader
+	Attachments   []*Attachment
+	ReadReceipt   []string
+	helloHostname string
 }
 
 // part is a copyable representation of a multipart.Part
@@ -587,8 +588,10 @@ func (e *Email) SendWithTLS(addr string, a smtp.Auth, t *tls.Config) error {
 		return err
 	}
 	defer c.Close()
-	if err = c.Hello("localhost"); err != nil {
-		return err
+	if e.helloHostname != "" {
+		if err = c.Hello(e.helloHostname); err != nil {
+			return err
+		}
 	}
 
 	if a != nil {
@@ -656,8 +659,10 @@ func (e *Email) SendWithStartTLS(addr string, a smtp.Auth, t *tls.Config) error 
 		return err
 	}
 	defer c.Close()
-	if err = c.Hello("localhost"); err != nil {
-		return err
+	if e.helloHostname != "" {
+		if err = c.Hello(e.helloHostname); err != nil {
+			return err
+		}
 	}
 	// Use TLS if available
 	if ok, _ := c.Extension("STARTTLS"); ok {
@@ -806,4 +811,12 @@ func generateMessageID() (string, error) {
 	}
 	msgid := fmt.Sprintf("<%d.%d.%d@%s>", t, pid, rint, h)
 	return msgid, nil
+}
+
+// SetHelloHostname optionally sets the hostname that the Go smtp.Client will
+// use when doing a HELLO with the upstream SMTP server. By default, Go uses
+// "localhost" which may not be accepted by certain SMTP servers that demand
+// an FQDN.
+func (e *Email) SetHelloHostname(h string) {
+	e.helloHostname = h
 }
