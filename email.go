@@ -664,8 +664,8 @@ func (e *Email) SendWithStartTLS(addr string, a smtp.Auth, t *tls.Config) error 
 			return err
 		}
 	}
-	// Use TLS if available
-	if ok, _ := c.Extension("STARTTLS"); ok {
+	// Use TLS if available and configured
+	if ok, _ := c.Extension("STARTTLS"); ok && t != nil {
 		if err = c.StartTLS(t); err != nil {
 			return err
 		}
